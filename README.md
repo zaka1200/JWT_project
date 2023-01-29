@@ -141,3 +141,12 @@ Now let's apply this on our project
 
 before starting to explain the code of our project lets give a small Demo on how the result looks like 
 
+https://user-images.githubusercontent.com/121964432/215355990-326d81df-f3b8-4e51-aaae-21aedaf12ce5.mp4
+
+# Server:
+
+## MongoDB
+## Models
+### Memos Model
+
+### Users Model
