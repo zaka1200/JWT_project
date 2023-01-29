@@ -145,8 +145,65 @@ https://user-images.githubusercontent.com/121964432/215355990-326d81df-f3b8-4e51
 
 # Server:
 
-## MongoDB
-## Models
-### Memos Model
+# MongoDB:
+
+## Models: 
+### Memos Model:
+
+This code is defining a Mongoose schema for a "memo" document. The schema has two fields: "date" and "content", both of which are required and have a data type of "String".
+
+```javascript
+const { default: mongoose } = require("mongoose");
+
+const schema= new mongoose.Schema({
+    date:{
+        type:String,
+        required:true
+    },
+    content:{
+        type:String,
+        required:true
+    }
+})
+```
+The schema is then used to create a Mongoose model named "Memo".
+```javascript
+const Memo=mongoose.model("memos",schema)
+```
+Finally, both the "schema" and the "Memo" are exported from this module, so that they can be used in other parts of the application.
+```javascript
+module.exports={schemaMemo:schema,Memo:Memo}
+```
 
 ### Users Model
+
+This code is defining a Mongoose schema for a "user" document. The schema has four fields: "login", "pwd", "name", and "memos". The "login" and "pwd" fields are required and have a data type of "String". The "name" field is also required and has a data type of "String". The "memos" field is an array that uses the "schemaMemo" imported from the "Memo" File.
+
+```javascript
+const { default: mongoose } = require("mongoose");
+const { schemaMemo } = require("./Memo");
+
+const schema = new mongoose.Schema({
+    login: {
+        type: String,
+        required: true
+    },
+    pwd: {
+        type: String,
+        required: true
+    },
+    name: {
+        type: String,
+        required: true
+    },
+    memos: [schemaMemo]
+})
+```
+The schema is then used to create a Mongoose model named "User".
+```javascript
+const User = mongoose.model("users", schema)
+```
+Finally, the "User" model is exported from this module, so that it can be used in other parts of the application.
+```javascript
+module.exports.User = User
+```
