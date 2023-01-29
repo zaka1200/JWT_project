@@ -281,7 +281,7 @@ module.exports.UserRouter = router;
 const { UserRouter } = require("./UserRoute");
 ```
 
-### MemoRoute
+### MemoRoute:
 
 Here is the node.js backend for a memo app. It uses the express.js framework for routing and handling HTTP requests, the jsonwebtoken library for authentication, and mongodb models (Memo and User) for storing and accessing data in the database.
 
@@ -349,7 +349,7 @@ router.delete("/:id", async (req, res) => {
     }
 });
 ```
-Before accessing these endpoints, the code checks the authentication of the user using the jsonwebtoken library. If a token is provided in the request header, the code verifies the token and decodes it to obtain user data. If the token is invalid or not provided, the code returns a 401 error.
+Before accessing these endpoints, we check the authentication of the user using the jsonwebtoken library. If a token is provided in the request header, the code verifies the token and decodes it to obtain user data. If the token is invalid or not provided, the code returns a 401 error.
 ```javascript
 router.use("", (req, res, next) => {
     try {
@@ -379,3 +379,84 @@ The code exports a router object to handle these endpoints, which can be used in
 module.exports.memosRouter = router;
 
 ```
+
+## Application:
+
+The role of the app.js file in a Node.js Express project is to create and configure an Express application, which is the main server-side component that provides the API endpoints and handles incoming HTTP requests from clients. The app.js file sets up the Express app, defines the routes and middleware, and starts the server to listen on a specified port. It acts as the entry point for the application and is responsible for configuring and starting the Express app.
+
+- we import several modules (mongoose, express, dotenv, jsonwebtoken, cors) and routes (UserRouter, memosRouter).
+
+```javascript
+const mongoose = require('mongoose')
+const express = require('express')
+const dotenv = require('dotenv');
+const jwt = require('jsonwebtoken');
+const cors = require('cors');
+const { UserRouter } = require('./routes/users');
+const { memosRouter } = require('./routes/memos');
+dotenv.config();
+```
+
+- We connect to a MongoDB Atlas cluster using the URI stored in the process.env.MONGODB_URI environment variable.
+
+```javascript
+mongoose.connect
+    (process.env.MONGODB_URI)
+    .then(() => console.log("connected to mongodb atlas"))
+    .catch(err => console.log(err))
+```
+
+- We create an Express application, configure it to parse JSON data on incoming requests, and set up CORS to allow all requests.
+
+```javascript
+const app = express();
+//middleware to parse json data on body request
+app.use(express.json())
+app.use(cors({
+    origin: '*'
+}));
+```
+
+- We use the imported UserRouter and memosRouter for routing requests to the '/users' and '/memos' endpoints, respectively.
+
+```javascript
+app.use('/users', UserRouter)
+
+app.use('/memos', memosRouter)
+```
+
+- We create a middleware function that checks for authentication on requests by looking for a JSON Web Token (JWT) in the headers of incoming requests, and verifies the token using a secret key stored in process.env.JWT_SECRET.
+
+```javascript
+app.use((req, res, next) => {
+    try {
+        const token = req.headers.authorization.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.userData = decoded;
+        next();
+    } catch (error) {
+        return res.status(401).json({
+            message: 'Auth failed'
+        });
+    }
+});
+```
+
+- We create a simple GET route for the root endpoint '/', that sends a simple "hi" message as a response.
+
+```javascript
+app.get('/', (req, res) => {
+    res.send("hi");
+})
+```
+
+- We set up the Express app to listen on a port defined in the process.env.port environment variable or 30000 if not provided.
+
+```javascript
+const port = process.env.port || 30000
+app.listen(port, () => {
+    console.log('server listening on port : ', port)
+})
+```
+
+# Client:
