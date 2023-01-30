@@ -460,3 +460,403 @@ app.listen(port, () => {
 ```
 
 # Client:
+
+The client-side refers to the front-end or user interface, which is typically built using HTML, CSS, and JavaScript. This is the part of the project that the end-user interacts with and it communicates with the server-side (Express Node.js back-end) to fetch and manipulate data.  The client-side is usually served to the user's browser, where the HTML, CSS, and JavaScript code is executed, to create a dynamic and interactive user interface.
+
+# Config.js:
+
+here we  export variables that represent elements from the html page. The exported constants (e.g. loginBtn, emailLogin, etc.) are assigned to elements on the page with a specific id value, which is retrieved using document.getElementById(). The exported url constant is a string representing a base URL for making API requests. 
+
+```javascript
+export const url=" http://localhost:30000"
+
+export const loginBtn = document.getElementById("loginBtn");
+export const emailLogin = document.getElementById("emailLogin");
+export const passwordLogin = document.getElementById("passwordLogin");
+export const welcomeElement = document.getElementById("welcomeElement");
+export const applicationElement = document.getElementById("applicationElement");
+export const loginElement = document.getElementById("loginElement");
+export const registerElement = document.getElementById("registerElement");
+export const memoInput = document.getElementById("memoInput");
+export const resetBtn = document.getElementById("resetBtn");
+export const addBtn = document.getElementById("addBtn");
+export const tbody = document.getElementById("tbody");
+export const emailRegister = document.getElementById("emailRegister");
+export const nameRegister = document.getElementById("nameRegister");
+export const passwordRegister = document.getElementById("passwordRegister");
+export const passwordRegister2 = document.getElementById("passwordRegister2");
+export const registerBtn = document.getElementById("registerBtn");
+export const logoutElement = document.getElementById("logoutElement");
+export const loading = document.getElementById("loading");
+```
+
+# main.js:
+
+Here we manage various components of the website and listens to various events on the page. We import different functions from different files (config.js, auth.js, and memos.js) to perform different tasks.
+
+- There are event listeners for the different buttons in the application. For example, the 'click' event of the loginBtn element calls the authentifier function with the inputted login email and password. The 'click' event of the registerBtn element calls the register function with the inputted email, name, password, and password confirmation.
+
+```javascript
+loginBtn.addEventListener('click', async () => {
+    const login = emailLogin.value
+    const pwd = passwordLogin.value
+    if (!login || !pwd)
+        return alert("please complete all fileds")
+
+    await authentifier(login, pwd)
+
+})
+
+logoutElement.addEventListener('click', () => {
+    logout();
+})
+
+resetBtn.addEventListener('click', () => {
+    memoInput.value = ""
+})
+
+addBtn.addEventListener('click', () => {
+    const content = memoInput.value
+    if (!content)
+        return alert("please provide a content for your memo")
+
+    addMemo(content)
+})
+
+registerBtn.addEventListener('click', () => {
+    // Recuperation des valeurs
+    const email = emailRegister.value
+    const name = nameRegister.value
+    const pwd = passwordRegister.value
+    const pwd2 = passwordRegister2.value
+
+    // verification des valeurs
+    if (!email || !name || !pwd || !pwd2)
+        return alert("please fill all inputs")
+
+    if (pwd != pwd2)
+        return alert("passwords didn't match")
+
+
+    // appel de la methode register
+    register(email, name, pwd, pwd2)
+
+})
+```
+
+- There are two functions viderRegister and viderLogin to clear the input fields after a successful authentication or registration.
+
+```javascript
+export const viderRegister = () => {
+    emailRegister.value = ""
+    nameRegister.value = ""
+    passwordRegister.value = ""
+    passwordRegister2.value = ""
+}
+export const viderLogin = () => {
+    passwordLogin.value = ""
+    emailLogin.value = ""
+}
+```
+
+- The addMemoToTable function is used to add a memo to the memo table. It creates table rows and cells, sets their attributes and text content, and adds them to the table body. The function also adds event listeners to the 'delete' and 'modify' buttons of each memo to perform the corresponding actions.
+
+```javascript
+export const addMemoToTable = (memo) => {
+    const { date, content, _id } = memo
+
+    const tr = document.createElement("tr")
+    const td1 = document.createElement("td")
+    const td2 = document.createElement("td")
+    const td3 = document.createElement("td")
+    const td4 = document.createElement("td")
+    const btn = document.createElement("button")
+    const btn2 = document.createElement("button")
+
+    tr.appendChild(td1)
+    tr.appendChild(td2)
+    tr.appendChild(td3)
+    tr.appendChild(td4)
+    td4.appendChild(btn)
+    td4.appendChild(btn2)
+
+    tr.setAttribute("id", _id);
+    
+    td1.innerText = _id
+    td2.innerHTML = content
+    td3.innerText = date
+    btn.innerText = "delete"
+    btn2.innerText = "modify"
+
+    btn.classList.add("delete")
+    btn2.classList.add("modify")
+    tbody.appendChild(tr)
+    btn.addEventListener("click", async () => {
+        await deleteMemo(_id)
+    })
+    btn2.addEventListener("click", async () => {
+        const content = memoInput.value
+        await modifyMemo(_id,content)
+    })
+
+
+}
+```
+
+- The getPath function returns the current URL hash, and the singlePageManger function takes the path as an argument to manage the navigation between pages in the application. It hides all the components, removes the 'selected' class from the navigation links, and then shows the selected component.
+
+```javascript
+const getPath = () => window.location.hash || '#welcome'
+const singlePageManger = (path) => {
+    console.log(path)
+    if (path == "#application") {
+        tbody.innerText = ""
+        load();
+    }
+    const components = document.getElementsByClassName("component")
+    Array.from(components).forEach(element => {
+        element.classList.add('hidden');
+    })
+    const links = document.querySelectorAll('header nav li')
+    Array.from(links).forEach(element => {
+        element.classList.remove('selected');
+    })
+    document.querySelector(path).classList.remove('hidden')
+    document.querySelector('header nav li:has(a[href="' + path + '"])').classList.add('selected')
+}
+```
+
+# auth.js:
+
+the role of this part is to provide functionalities related to authentication
+ 
+- Here we export three functions: authentifier, logout, and register. These functions interact with a back-end API to handle authentication and logout functionality. 
+ 
+ - The authentifier function takes in a login and pwd parameter, which are the user's login name and password. It creates a JavaScript object dataToSend containing the login and pwd, and sends a POST request to the API's /users/login endpoint. The request includes the Content-Type header set to application/json and the dataToSend object stringified and sent as the request body.
+
+```javascript
+ export const authentifier = (login, pwd) => {
+    const dataToSend = { login: login, pwd: pwd }
+    fetch(url + "/users/login", {
+        method: "POST",
+        body: JSON.stringify(dataToSend),
+        headers: {
+            'Content-Type': 'application/json'
+            // 'Authorization': 'Bearer <$token>'
+        }
+    }).then(res => {
+        if (res.ok) {
+
+
+            res.json().then(data => {
+
+                const { name, token } = data;
+                logoutElement.children[0].innerText = "Logout(" + name + ")"
+
+                // insertion du JWT dans le local storage
+                localStorage.setItem("token", token);
+                window.location = "#application"
+                loginElement.classList.add("hidden")
+                logoutElement.classList.remove("hidden")
+                viderLogin();
+                //S
+            }).catch(err => alert(err))
+        }
+        else {
+            alert("echec d'authentification")
+        }
+    })
+        .catch(err => console.log(err));
+}
+```
+> If the API response is successful, it is processed using the .json() method and the name and token values are extracted from the response data. The token is saved in the browser's local storage using the localStorage.setItem() method. The text of the logout button is updated with the user's name, and the login and logout elements are toggled based on the visibility class. The viderLogin function is also called.
+
+- The logout function sends a POST request to the /users/logout endpoint. If the response is successful, the token is removed from local storage using localStorage.removeItem(), and the login and logout elements are toggled based on the visibility class.
+
+```javascript
+export const logout = () => {
+
+    fetch(url + "/users/logout", {
+        method: "POST"
+    }).then(res => {
+        if (res.ok) {
+            localStorage.removeItem("token");
+            logoutElement.children[0].innerText = "Logout"
+            logoutElement.classList.add("hidden")
+            loginElement.classList.remove("hidden")
+            window.location = "#login"
+
+            // suppression du JWT  du local Storage
+        }
+        else {
+            alert("error dans le logout")
+        }
+    })
+        .catch(err => alert(err));
+}
+```
+
+- The register function takes in four parameters: email, name, pwd, and pwd2, which represent the user's email, name, password, and password confirmation. It creates a JavaScript object dataToSend containing the registration data, and sends a POST request to the API's /users/register endpoint. The request includes the Content-Type header set to application/json and the dataToSend object stringified and sent as the request body.
+
+```javascript
+export const register = (email, name, pwd, pwd2) => {
+
+    const dataToSend = {
+        login: email,
+        name: name,
+        pwd: pwd,
+        pwd2: pwd2
+    }
+    fetch(url + "/users/register", {
+        method: "POST",
+        body: JSON.stringify(dataToSend),
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    }).then(res => {
+        if (res.ok) {
+            alert("success");
+            window.location = "#login"
+            viderRegister();
+        }
+        else {
+            res.json()
+                .then(data => {
+                    const { message } = data;
+                    alert(message)
+                })
+                .catch(err => {
+                    alert("erreur");
+                    console.log(err);
+                })
+        }
+    })
+        .catch(err => {
+            alert("erreur");
+            console.log(err);
+        });
+
+}
+```
+> If the API response is successful, an alert message indicating success is displayed and the window.location property is set to the #login hash, which likely navigates the user to a login page. The viderRegister function is called. If the response is not successful, the error message from the response data is extracted and displayed as an alert.
+
+# memos.js:
+
+- **load** : retrieves a list of memos from a server by making a GET request to the URL obtained by concatenating "url" with "/memos". It sets the "Authorization" header of the request to a JSON Web Token (JWT) stored in local storage, and it adds the "Content-Type" header with a value of "application/json". The function removes the "hidden" class from the "loading" element and displays an error message if there is a problem with the request. Once the data is received, it calls the "addMemoToTable" function for each memo in the received data. After the data has been processed, the "hidden" class is added back to the "loading" element.
+
+```javascript
+export const load = async () => {
+
+    loading.classList.remove("hidden")
+    const token = await localStorage.getItem("token");
+    //
+    fetch(url + "/memos", {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+        },
+    }).then(res => res.json()).then(data => {
+        //data => array
+        data.forEach(element => {
+            addMemoToTable(element)
+        });
+
+    })
+        .catch(err => {
+            alert("error");
+            console.log(err)
+        }).finally(() => {
+            loading.classList.add("hidden")
+        })
+}
+```
+
+- **addMemo** : adds a memo to the server by making a POST request to the URL obtained by concatenating "url" with "/memos". The function constructs an object to send as the body of the request, containing the memo's content and date. It sets the "Authorization" header of the request to the JWT stored in local storage, and it adds the "Content-Type" header with a value of "application/json". If the response from the server is successful (status code 200), the function calls the "addMemoToTable" function with the data received from the server. If the response is not successful, the function displays an error message.
+
+```javascript
+export const addMemo = async (content) => {
+    const dataToSend = {
+        content: content,
+        date: new Date()
+    }
+    const token = await localStorage.getItem("token");
+
+    fetch(url + "/memos", {
+        method: "POST",
+        body: JSON.stringify(dataToSend),
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+        }
+    }).then(res => {
+        if (res.ok) {
+            res.json().then(data => {
+                addMemoToTable(data)
+            })
+        }
+        else {
+            alert("erreur")
+        }
+    })
+        .catch(err => {
+            alert("erreur")
+            console.log(err)
+        })
+}
+```
+
+- **deleteMemo**: deletes a memo from the server by making a DELETE request to the URL obtained by concatenating "url" with "/memos/id", where "id" is the id of the memo to be deleted. It sets the "Authorization" header of the request to the JWT stored in local storage, and it adds the "Content-Type" header with a value of "application/json". If the response from the server is successful (status code 200), the function removes the HTML element with the corresponding id. If the response is not successful, the function displays an error message.
+
+```javascript
+export const deleteMemo = async (id) => {
+    const token = await localStorage.getItem("token");
+
+    fetch(url + "/memos/" + id, {
+        method: "DELETE",
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+        }
+    }).then(res => {
+        if (res.ok) {
+            document.getElementById(id).remove();
+        }
+        else
+            alert("error")
+    })
+        .catch(err => {
+            alert("erreur")
+            console.log(err)
+        })
+}
+```
+- **modifyMemo**: modifies a memo on the server by making a PUT request to the URL obtained by concatenating "url" with "/memos/id", where "id" is the id of the memo to be modified. The function constructs an object to send as the body of the request, containing the memo's new content and date. It sets the "Authorization" header of the request to the JWT stored in local storage, and it adds the "Content-Type" header with a value of "application/json". If the response from the server is successful (status code 200), the function updates the content of the corresponding memo in the HTML element. If the response is not successful, the function displays an error message.
+
+```javascript
+export const modifyMemo = async (id, content) => {
+    const token = await localStorage.getItem("token");
+    const dataToSend = {
+        content: content,
+        date: new Date()
+    }
+    fetch(url + "/memos/" + id, {
+        method: "PUT",
+        body: JSON.stringify(dataToSend),
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+        }
+    }).then(res => {
+        if (res.ok) {
+            document.getElementById(id).children[1].innerText=content
+        }
+        else
+            alert("error")
+    })
+        .catch(err => {
+            alert("erreur")
+            console.log(err)
+        })
+}
+```
